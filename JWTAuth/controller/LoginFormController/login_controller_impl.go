@@ -2,9 +2,7 @@ package controller
 
 import (
 	"net/http"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/julienschmidt/httprouter"
 	"github.com/ryhnfhrza/golang-JWT-Authentication/helper"
 	"github.com/ryhnfhrza/golang-JWT-Authentication/model/web"
@@ -41,18 +39,7 @@ func(controller *LoginFormControllerImpl)Login(writer http.ResponseWriter, reque
 	LoginRequest := web.LoginRequest{}
 	helper.ReadFromRequestBody(request,&LoginRequest)
 	
-	LoginFormResponse := controller.LoginFormService.Login(request.Context(),LoginRequest)
-	
-	expTime := time.Now().Add(time.Hour * 1)
-	claims := &util.JWTClaim{
-		Username: LoginRequest.Username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer: "github.com/ryhnfhrza",
-			ExpiresAt: jwt.NewNumericDate(expTime),
-		},
-	}
-
-	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
+	LoginFormResponse,tokenAlgo := controller.LoginFormService.Login(request.Context(),LoginRequest)
 
 	token,err := tokenAlgo.SignedString(util.JWT_KEY)
 	if err != nil{

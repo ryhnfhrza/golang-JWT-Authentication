@@ -3,13 +3,16 @@ package service
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/ryhnfhrza/golang-JWT-Authentication/exception"
 	"github.com/ryhnfhrza/golang-JWT-Authentication/helper"
 	"github.com/ryhnfhrza/golang-JWT-Authentication/model/domain"
 	"github.com/ryhnfhrza/golang-JWT-Authentication/model/web"
 	repository "github.com/ryhnfhrza/golang-JWT-Authentication/repository/LoginFormRepository"
+	"github.com/ryhnfhrza/golang-JWT-Authentication/util"
 	utils "github.com/ryhnfhrza/golang-JWT-Authentication/util"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -50,7 +53,7 @@ func(service *LoginFormServiceImpl)Registration(ctx context.Context, request web
 	return helper.ToLoginFormResponse(loginForm)
 }
 
-func(service *LoginFormServiceImpl)Login(ctx context.Context, request web.LoginRequest) web.LoginFormResponse{
+func(service *LoginFormServiceImpl)Login(ctx context.Context, request web.LoginRequest) (web.LoginFormResponse,*jwt.Token){
 	err := service.validate.Struct(request)
 	helper.PanicIfError(err)
 
@@ -71,7 +74,20 @@ func(service *LoginFormServiceImpl)Login(ctx context.Context, request web.LoginR
 		panic(exception.NewUnauthorizedError("Password is incorrect"))
 	}
 	
-	return helper.ToLoginFormResponse(login)
+	expTime := time.Now().Add(time.Hour * 1)
+	claims := &util.JWTClaim{
+		Username: request.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer: "github.com/ryhnfhrza",
+			ExpiresAt: jwt.NewNumericDate(expTime),
+		},
+	}
+
+	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
+
+	
+	
+	return helper.ToLoginFormResponse(login),tokenAlgo
 }
 
 func(service *LoginFormServiceImpl)Logout(ctx context.Context){
